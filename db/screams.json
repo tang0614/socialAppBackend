@@ -1,0 +1,31 @@
+{
+  "screams": [
+    {
+      "screamId": "1",
+      "body": "this is scream 1",
+      "commentCount": 0,
+      "createdAt": "08/31/2020",
+      "likeCount": 2,
+      "userHandle": "user",
+      "userImage": "https://"
+    },
+    {
+      "screamId": "2",
+      "body": "this is scream 2",
+      "commentCount": 0,
+      "createdAt": "08/31/2020",
+      "likeCount": 2,
+      "userHandle": "user",
+      "userImage": "https://"
+    },
+    {
+      "screamId": "3",
+      "body": "this is scream 3",
+      "commentCount": 0,
+      "createdAt": "08/31/2020",
+      "likeCount": 2,
+      "userHandle": "user",
+      "userImage": "https://"
+    }
+  ]
+}
