@@ -1,16 +1,17 @@
 //process.env.NODE_ENV  is the environmental variable
-//export process.env.NODE_ENV = production
+//export process.env.NODE_ENV=production
 //export debug=app:startup,app:db
 
-//storing the password
-// export [name]_password =
+//storing the password export [name]_password=
+
 const mongoose = require("mongoose");
 const config = require("config");
 const express = require("express");
 const helmet = require("helmet");
 const morgan = require("morgan");
 const screams = require("./routes/screams");
-
+const users = require("./routes/users");
+const auth = require("./routes/auth");
 
 mongoose
   .connect(
@@ -37,9 +38,15 @@ app.use(helmet());
 //Configuration
 console.log("Application name", config.get("name"));
 console.log("Application name", config.get("mail.password"));
+
 if (app.get("env") === "development") {
   app.use(morgan("tiny")); //logging http requests
   app_debugger("Morgan enabled"); //same as console.log
+}
+
+if (!config.get("jwtPrivateKey")) {
+  console.error("jwt key is not set");
+  process.exit(1);
 }
 
 // app.use(express.urlencoded({extended:true}))
@@ -47,6 +54,8 @@ if (app.get("env") === "development") {
 // middle ware take request from the client and either pass response to the client or to the next middle ware function
 
 app.use("/api/screams", screams);
+app.use("/api/users", users);
+app.use("/api/auth", auth);
 //set environment var: export PORT=5000
 // PORT is an environment variable
 const port = process.env.PORT || 3000;

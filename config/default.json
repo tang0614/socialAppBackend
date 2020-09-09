@@ -1,3 +1,4 @@
 {
-  "name": " social"
+  "name": " social",
+  "jwtPrivateKey": ""
 }

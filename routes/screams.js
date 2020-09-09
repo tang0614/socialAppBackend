@@ -2,6 +2,14 @@ const express = require("express");
 const router = express("Router");
 const Joi = require("joi");
 const Scream = require("../model/screamsdb");
+const auth = require("../middleware/auth");
+const admin = require("../middleware/admin");
+
+const schema = Joi.object({
+  body: Joi.string().min(3).max(30).required(),
+
+  //     .email({ minDomainSegments: 2, tlds: { allow: ['com', 'net'] } })
+});
 
 router.get("/", async (req, res) => {
   const screams = await Scream.find();
@@ -9,7 +17,7 @@ router.get("/", async (req, res) => {
   res.send(screams);
 });
 
-router.post("/", async (req, res) => {
+router.post("/", auth, async (req, res) => {
   // check if body is valid
   // if not valid, return 400
   const validateResult = schema.validate(req.body);
@@ -24,13 +32,13 @@ router.post("/", async (req, res) => {
     userHandle: "user",
   });
 
-  const result = await scream.save();
+  await scream.save();
 
   // return scream
   res.send(scream);
 });
 
-router.put("/:_id", async (req, res) => {
+router.put("/:_id", auth, async (req, res) => {
   const scream = await Scream.findById(req.params._id);
 
   if (!scream) {
@@ -54,54 +62,18 @@ router.put("/:_id", async (req, res) => {
   res.send(scream);
 });
 
-router.delete("/:_id", async (req, res) => {
-  const scream = await Scream.findById(req.params._id);
-
-  if (!scream) {
-    //must return otherwise the following code will be executes
-    return res.status(404).send("the scream of the given id is not found");
+router.delete("/:_id", [auth, admin], async (req, res) => {
+  try {
+    const scream = await Scream.findByIdAndRemove(req.params._id);
+    if (!scream) {
+      //must return otherwise the following code will be executes
+      return res.status(404).send("the scream of the given id is not found");
+      // return scream
+      res.send(scream);
+    }
+  } catch (err) {
+    console.log(err);
   }
-  await Scream.deleteOne({ _id: req.params._id });
-  // return scream
-  res.send(scream);
 });
-
-const schema = Joi.object({
-  body: Joi.string().min(3).max(30).required(),
-
-  // username: Joi.string()
-  //     .alphanum()
-  //     .min(3)
-  //     .max(30)
-  //     .required(),
-
-  // password: Joi.string()
-  //     .pattern(new RegExp('^[a-zA-Z0-9]{3,30}$')),
-
-  // repeat_password: Joi.ref('password'),
-
-  // access_token: [
-  //     Joi.string(),
-  //     Joi.number()
-  // ],
-
-  // birth_year: Joi.number()
-  //     .integer()
-  //     .min(1900)
-  //     .max(2013),
-
-  // email: Joi.string()
-  //     .email({ minDomainSegments: 2, tlds: { allow: ['com', 'net'] } })
-});
-//   .with("username", "birth_year")
-//   .xor("password", "access_token")
-//   .with("password", "repeat_password");
-
-// try {
-//   const value = await schema.validateAsync({
-//     username: "abc",
-//     birth_year: 1994,
-//   });
-// } catch (err) {}
 
 module.exports = router;
