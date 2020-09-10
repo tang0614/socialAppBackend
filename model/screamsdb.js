@@ -1,16 +1,10 @@
 const mongoose = require("mongoose");
+const { GenreSchema } = require("./genresdb");
 
 //properties in this schema is optional, types only meaningful in mongoose not mongodb
-const screamSchema = new mongoose.Schema({
+const ScreamSchema = new mongoose.Schema({
   body: { type: String, required: true, minLength: 5, maxLength: 255 },
-  category: {
-    type: String,
-    enum: ["normal", "fav"],
-    lowercase: true,
-    uppercase: false,
-    trim: true,
-    required: true,
-  },
+
   author: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "User",
@@ -28,8 +22,12 @@ const screamSchema = new mongoose.Schema({
       ref: "User",
     },
   ],
+  genre: {
+    type: GenreSchema,
+  },
 });
 
-const Scream = mongoose.model("Scream", screamSchema);
+const Scream = mongoose.model("Scream", ScreamSchema);
 
-module.exports = { screamSchema, Scream };
+module.exports = Scream;
+module.exports.ScreamSchema = ScreamSchema;

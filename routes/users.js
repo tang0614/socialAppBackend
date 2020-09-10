@@ -66,6 +66,9 @@ router.get("/:handle", async (req, res) => {
   res.send(user);
 });
 
+//get all followers
+//get all followings
+
 //authorization -whether user has token
 router.post("/", async (req, res) => {
   const { error } = schema.validate(req.body);
@@ -74,8 +77,11 @@ router.post("/", async (req, res) => {
   }
   //if the user already registered
   let user = await User.findOne({ handle: req.body.handle });
-
   if (user) return res.status(400).send({ message: "user already registered" });
+
+  let user2 = await User.findOne({ email: req.body.email });
+  if (user2)
+    return res.status(400).send({ message: "user already registered" });
 
   if (req.body.password !== req.body.repeat_password)
     return res.status(400).send({ message: "password is different" });
@@ -100,16 +106,16 @@ router.post("/", async (req, res) => {
 
 //add user details
 router.put("/addDetails", auth, async (req, res) => {
-  let user = await User.findById(req.user._id).select("-password");
-  if (!user) return res.status(400).send({ message: "user does not exists" });
-
-  user = user.set({
-    website: req.body.website,
-    location: req.body.location,
-    bio: req.body.bio,
+  const user = await User.findByIdAndUpdate(req.params._id, {
+    $set: {
+      website: req.body.website,
+      location: req.body.location,
+      bio: req.body.bio,
+    },
   });
 
-  await user.save();
+  if (!user)
+    return res.status(404).send("The user with the given ID was not provides");
 
   // return scream
   res.send(user);
@@ -121,38 +127,42 @@ router.put(
   auth,
   upload.single("profileImage"),
   async (req, res) => {
-    let user = await User.findById(req.user._id).select("-password");
-    if (!user) return res.status(400).send({ message: "user does not exists" });
-    console.log(req.file);
-    user = user.set({
-      imageUrl: req.file.path,
+    const user = await User.findByIdAndUpdate(req.user._id, {
+      $set: {
+        imageUrl: req.file.path,
+      },
     });
 
-    await user.save();
+    if (!user)
+      return res
+        .status(404)
+        .send("The user with the given ID was not provides");
 
-    res.send(user.imageUrl);
+    // return scream
+    res.send(user);
   }
 );
 
 //add friend
 router.put("/:handle/follow", auth, async (req, res) => {
-  //check if the documents exists
-  const user = await User.find({ handle: req.params.handle });
+  //check if the documents exists, using find will return back an array of objects
+  const target = await User.findOne({ handle: req.params.handle });
 
-  if (!user[0]) {
+  if (!target) {
     //must return otherwise the following code will be executes
     return res.status(404).send("the user of the given id is not found");
   }
 
-  let me = await User.findById(req.user._id);
-
-  me = me.set({
-    following: [user[0]._id],
+  const user = await User.findByIdAndUpdate(req.user._id, {
+    $set: {
+      following: [target._id],
+    },
   });
 
-  await me.save();
+  if (!user)
+    return res.status(404).send("The user with the given ID was not provides");
 
-  // return updated scream
-  res.send(me);
+  // return scream
+  res.send(user);
 });
 module.exports = router;

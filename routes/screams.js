@@ -1,12 +1,14 @@
 const express = require("express");
 const router = express("Router");
 const Joi = require("joi");
-const { Scream } = require("../model/screamsdb");
+const Scream = require("../model/screamsdb");
+const Genre = require("../model/genresdb");
 const auth = require("../middleware/auth");
 const admin = require("../middleware/admin");
 
 const schema = Joi.object({
   body: Joi.string().min(3).max(30).required(),
+  genreId: Joi.string(),
 });
 
 //get all screams
@@ -33,6 +35,9 @@ router.get("/:_id", async (req, res) => {
   res.send(scream);
 });
 
+//get all comments from a scream
+//get a user likes this scream
+
 //post a new scream
 router.post("/", auth, async (req, res) => {
   // check if body is valid
@@ -45,9 +50,6 @@ router.post("/", auth, async (req, res) => {
   const scream = new Scream({
     author: req.user._id,
     body: req.body.body,
-    category: "normal",
-    commentCount: 0,
-    likeCount: 0,
   });
 
   await scream.save();
@@ -58,66 +60,72 @@ router.post("/", auth, async (req, res) => {
 
 //comment a existing scream
 router.put("/:_id/:comment_id/comment", auth, async (req, res) => {
-  //check if the documents exists
-  let scream = await Scream.findById(req.params._id);
-
-  if (!scream) {
-    //must return otherwise the following code will be executes
-    return res.status(404).send("the scream of the given id is not found");
-  }
   const comment = await Scream.findById(req.params.comment_id);
-
   if (!comment) {
     //must return otherwise the following code will be executes
     return res.status(404).send("the comment of the given id is not found");
   }
 
-  scream = scream.set({
-    comments: [req.params.comment_id],
+  const updatedScream = await Scream.findByIdAndUpdate(req.params._id, {
+    $set: { comments: [req.params.comment_id] },
   });
 
-  await scream.save();
+  if (!updatedScream)
+    return res.status(404).send("The genre with the given ID was not provides");
 
   // return updated scream
-  res.send(scream);
+  res.send(updatedScream);
 });
 
 //like a scream
 router.put("/:_id/like", auth, async (req, res) => {
-  let scream = await Scream.findById(req.params._id);
-
-  if (!scream) {
-    //must return otherwise the following code will be executes
-    return res.status(404).send("the scream of the given id is not found");
-  }
-
-  scream = scream.set({
-    likeBy: [req.user._id],
+  const updatedScream = await Scream.findByIdAndUpdate(req.params._id, {
+    $set: { likeBy: [req.user._id] },
   });
 
-  await scream.save();
+  if (!updatedScream)
+    return res.status(404).send("The genre with the given ID was not provides");
 
   // return scream
-  res.send(scream);
+  res.send(updatedScream);
 });
 
 //unlike a scream
 router.put("/:_id/unlike", auth, async (req, res) => {
-  let scream = await Scream.findById(req.params._id);
-
-  if (!scream) {
-    //must return otherwise the following code will be executes
-    return res.status(404).send("the scream of the given id is not found");
-  }
-
-  scream = scream.unset({
-    likeBy: [req.user._id],
+  const updatedScream = await Scream.findByIdAndUpdate(req.params._id, {
+    $unset: { likeBy: [req.user._id] },
   });
 
-  await scream.save();
+  if (!updatedScream)
+    return res.status(404).send("The genre with the given ID was not provides");
 
   // return scream
-  res.send(scream);
+  res.send(updatedScream);
+});
+
+//update a scream genre
+router.put("/:_id", auth, async (req, res) => {
+  const genre = await Genre.findById(req.body.genreId);
+
+  if (req.body.genreId && !genre)
+    return res.status(404).send("The genre with the given ID was not valid");
+
+  const updated = await Scream.findByIdAndUpdate(req.params._id, {
+    $set: {
+      genre: {
+        _id: genre._id,
+        name: genre.name,
+      },
+    },
+  });
+
+  if (!updated)
+    return res
+      .status(404)
+      .send("The scream with the given ID was not provides");
+
+  // return updated scream
+  res.send(updated);
 });
 
 //delete a scream

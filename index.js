@@ -12,6 +12,7 @@ const morgan = require("morgan");
 const screams = require("./routes/screams");
 const users = require("./routes/users");
 const auth = require("./routes/auth");
+const genre = require("./routes/genre");
 
 mongoose
   .connect(
@@ -32,6 +33,7 @@ const db_debugger = require("debug")("app:db");
 db_debugger("connecting to the database");
 
 const app = express();
+app.use("/uploads", express.static("uploads"));
 app.use(express.json()); //parse input as json object and put it as request.body, and pass it to other routes
 app.use(helmet());
 
@@ -56,6 +58,7 @@ if (!config.get("jwtPrivateKey")) {
 app.use("/api/screams", screams);
 app.use("/api/users", users);
 app.use("/api/auth", auth);
+app.use("/api/genre", genre);
 //set environment var: export PORT=5000
 // PORT is an environment variable
 const port = process.env.PORT || 3000;
