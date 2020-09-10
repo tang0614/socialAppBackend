@@ -16,21 +16,16 @@ const screamSchema = new mongoose.Schema({
     ref: "User",
     required: true,
   },
-  commentCount: {
-    type: String,
-    min: 0,
-    required: true,
-  },
-  likeCount: {
-    type: String,
-    min: 0,
-    required: true,
-  },
   comments: [
     {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Scream",
-
+    },
+  ],
+  likeBy: [
+    {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
     },
   ],
 });

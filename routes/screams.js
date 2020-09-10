@@ -1,7 +1,7 @@
 const express = require("express");
 const router = express("Router");
 const Joi = require("joi");
-const User = require("../model/usersdb");
+const { Scream } = require("../model/screamsdb");
 const auth = require("../middleware/auth");
 const admin = require("../middleware/admin");
 
@@ -82,32 +82,6 @@ router.put("/:_id/:comment_id/comment", auth, async (req, res) => {
   res.send(scream);
 });
 
-//update a scream
-
-router.put("/:_id", auth, async (req, res) => {
-  const scream = await Scream.findById(req.params._id);
-
-  if (!scream) {
-    //must return otherwise the following code will be executes
-    return res.status(404).send("the scream of the given id is not found");
-  }
-
-  // check if body is valid
-  // if not valid, return 400
-  const validateResult = schema.validate(req.body);
-  if (validateResult.error) {
-    res.status(404).send(validateResult.error.details[0].message);
-  }
-
-  scream = scream.set({
-    body: req.body.body,
-  });
-  await scream.save();
-
-  // return scream
-  res.send(scream);
-});
-
 //like a scream
 router.put("/:_id/like", auth, async (req, res) => {
   let scream = await Scream.findById(req.params._id);
@@ -118,8 +92,9 @@ router.put("/:_id/like", auth, async (req, res) => {
   }
 
   scream = scream.set({
-    likeCount: parseInt(scream.likeCount) + 1,
+    likeBy: [req.user._id],
   });
+
   await scream.save();
 
   // return scream
@@ -135,9 +110,10 @@ router.put("/:_id/unlike", auth, async (req, res) => {
     return res.status(404).send("the scream of the given id is not found");
   }
 
-  scream = scream.set({
-    likeCount: parseInt(scream.likeCount) - 1,
+  scream = scream.unset({
+    likeBy: [req.user._id],
   });
+
   await scream.save();
 
   // return scream

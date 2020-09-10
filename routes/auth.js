@@ -14,6 +14,7 @@ const schema = Joi.object({
   password: Joi.string().pattern(new RegExp("^[a-zA-Z0-9]{3,30}$")),
 });
 
+//authentication
 router.post("/", async (req, res) => {
   const { error } = schema.validate(req.body);
   if (error) {
@@ -34,6 +35,9 @@ router.post("/", async (req, res) => {
   //_id is the information of the user , here is mongodb id, and so we do not need to query the data anymore
   //privateKey is the digital signature that only  on the the server
   const token = user.generatedAuthToken();
-  res.header("x-auth-token", token).status(200).send({ token });
+  res
+    .header("x-auth-token", token)
+    .status(200)
+    .send(_.pick(user, ["_id", "handle", "email"]));
 });
 module.exports = router;
