@@ -23,12 +23,22 @@ const schema = Joi.object({
   //     Joi.number()
   // ],
 });
-//authorization -whether user has token
+
+//get personal detail
 router.get("/me", auth, async (req, res) => {
-  const user = await (await User.findById(req.user._id)).select("-password");
+  const user = await User.findById(req.user._id).select("-password");
   res.send(user);
 });
 
+//get other users detail
+router.get("/:handle", async (req, res) => {
+  const user = await User.find({ handle: req.params.handle }).select(
+    "-password"
+  );
+  res.send(user);
+});
+
+//authorization -whether user has token
 router.post("/", async (req, res) => {
   const { error } = schema.validate(req.body);
   if (error) {
@@ -51,11 +61,51 @@ router.post("/", async (req, res) => {
   const salt = await bcrypt.genSalt(20);
   user.password = await bcrypt.hash(user.password, salt);
 
-  await user.save();
+  user = await user.save();
   const token = user.generatedAuthToken();
 
   res
     .header("x-auth-token", token)
+    .header("access-control-expose-header", "x-auth-token")
     .send(_.pick(user, ["_id", "handle", "email"]));
+});
+
+//add user details
+router.put("/addDetails", auth, async (req, res) => {
+  let user = await User.findById(req.user._id).select("-password");
+  if (!user) return res.status(400).send({ message: "user does not exists" });
+
+  user = user.set({
+    website: req.body.website,
+    location: req.body.location,
+    bio: req.body.bio,
+  });
+
+  await user.save();
+
+  // return scream
+  res.send(user);
+});
+
+//add friend
+router.put("/:handle/follow", auth, async (req, res) => {
+  //check if the documents exists
+  const user = await User.find({ handle: req.params.handle });
+
+  if (!user[0]) {
+    //must return otherwise the following code will be executes
+    return res.status(404).send("the user of the given id is not found");
+  }
+
+  let me = await User.findById(req.user._id);
+
+  me = me.set({
+    friends: [user[0]._id],
+  });
+
+  await me.save();
+
+  // return updated scream
+  res.send(me);
 });
 module.exports = router;
