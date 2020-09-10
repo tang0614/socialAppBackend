@@ -2,12 +2,19 @@ const express = require("express");
 const router = express("Router");
 const Joi = require("joi");
 const Genre = require("../model/genresdb");
-
+const asyncMiddleware = require("../middleware/asyncJS");
 const auth = require("../middleware/auth");
 const admin = require("../middleware/admin");
 
 const schema = Joi.object({
   name: Joi.string().alphanum().min(5).max(50).required(),
+});
+
+router.get("/", async function (req, res) {
+  const genres = await Genre.findAll();
+  if (!genre) return res.status(404).send("no genre provides");
+
+  res.send(genres);
 });
 
 router.get("/:id", async function (req, res) {

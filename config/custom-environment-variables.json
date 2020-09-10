@@ -1,0 +1,4 @@
+{
+  "db": "mongodb+srv://xinyu_tang:CS2020er..@moviecluster.3sbef.mongodb.net/socialApp?retryWrites=true&w=majority",
+  "jwtPrivateKey": "social_jwtPrivateKey"
+}
