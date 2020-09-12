@@ -5,7 +5,7 @@ module.exports = function (req, res, next) {
   if (!token) res.status(401).send({ message: "no valid token" });
   try {
     const decoded = jwt.verify(token, config.get("jwtPrivateKey"));
-    console.log("decoded", decoded);
+
     req.user = decoded; // return back the payload which is mongodb userID
     //req.user._id is stored
     next();

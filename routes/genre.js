@@ -2,7 +2,6 @@ const express = require("express");
 const router = express("Router");
 const Joi = require("joi");
 const Genre = require("../model/genresdb");
-const asyncMiddleware = require("../middleware/asyncJS");
 const auth = require("../middleware/auth");
 const admin = require("../middleware/admin");
 

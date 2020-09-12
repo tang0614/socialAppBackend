@@ -21,11 +21,6 @@ const schema = Joi.object({
     minDomainSegments: 2,
     tlds: { allow: ["com", "net"] },
   }),
-
-  // access_token: [
-  //     Joi.string(),
-  //     Joi.number()
-  // ],
 });
 
 const storage = multer.diskStorage({
@@ -52,12 +47,6 @@ const upload = multer({
   fileFilter: fileFilter,
 });
 
-//get personal detail
-router.get("/me", auth, async (req, res) => {
-  const user = await User.findById(req.user._id).select("-password");
-  res.send(user);
-});
-
 //get other users detail
 router.get("/:handle", async (req, res) => {
   const user = await User.find({ handle: req.params.handle }).select(
@@ -66,46 +55,14 @@ router.get("/:handle", async (req, res) => {
   res.send(user);
 });
 
-//get all followers
-//get all followings
-
-//authorization -whether user has token
-router.post("/", async (req, res) => {
-  const { error } = schema.validate(req.body);
-  if (error) {
-    res.status(404).send(error.details[0].message);
-  }
-  //if the user already registered
-  let user = await User.findOne({ handle: req.body.handle });
-  if (user) return res.status(400).send({ message: "user already registered" });
-
-  let user2 = await User.findOne({ email: req.body.email });
-  if (user2)
-    return res.status(400).send({ message: "user already registered" });
-
-  if (req.body.password !== req.body.repeat_password)
-    return res.status(400).send({ message: "password is different" });
-
-  user = new User({
-    handle: req.body.handle,
-    email: req.body.email,
-    password: req.body.password,
-  });
-
-  const salt = await bcrypt.genSalt(20);
-  user.password = await bcrypt.hash(user.password, salt);
-
-  user = await user.save();
-  const token = user.generatedAuthToken();
-
-  res
-    .header("x-auth-token", token)
-    .header("access-control-expose-header", "x-auth-token")
-    .send(_.pick(user, ["_id", "handle", "email"]));
+//get personal detail
+router.get("/me", auth, async (req, res) => {
+  const user = await User.findById(req.user._id).select("-password");
+  res.send(user);
 });
 
 //add user details
-router.put("/addDetails", auth, async (req, res) => {
+router.put("/details", auth, async (req, res) => {
   const user = await User.findByIdAndUpdate(req.params._id, {
     $set: {
       website: req.body.website,
@@ -122,29 +79,22 @@ router.put("/addDetails", auth, async (req, res) => {
 });
 
 //add user image
-router.put(
-  "/addImage",
-  auth,
-  upload.single("profileImage"),
-  async (req, res) => {
-    const user = await User.findByIdAndUpdate(req.user._id, {
-      $set: {
-        imageUrl: req.file.path,
-      },
-    });
+router.put("/image", auth, upload.single("profileImage"), async (req, res) => {
+  const user = await User.findByIdAndUpdate(req.user._id, {
+    $set: {
+      imageUrl: req.file.path,
+    },
+  });
 
-    if (!user)
-      return res
-        .status(404)
-        .send("The user with the given ID was not provides");
+  if (!user)
+    return res.status(404).send("The user with the given ID was not provides");
 
-    // return scream
-    res.send(user);
-  }
-);
+  // return scream
+  res.send(user);
+});
 
 //add friend
-router.put("/:handle/follow", auth, async (req, res) => {
+router.put("/:handle", auth, async (req, res) => {
   //check if the documents exists, using find will return back an array of objects
   const target = await User.findOne({ handle: req.params.handle });
 
@@ -165,4 +115,40 @@ router.put("/:handle/follow", auth, async (req, res) => {
   // return scream
   res.send(user);
 });
+
+//authorization
+router.post("/", async (req, res) => {
+  const { error } = schema.validate(req.body);
+  if (error) {
+    return res.status(404).send(error.details[0].message);
+  }
+  //if the user already registered
+  let user = await User.findOne({ handle: req.body.handle });
+  if (user) return res.status(400).send({ message: "user already registered" });
+
+  let user2 = await User.findOne({ email: req.body.email });
+  if (user2)
+    return res.status(400).send({ message: "user already registered" });
+
+  if (req.body.password !== req.body.repeat_password)
+    return res.status(400).send({ message: "password is different" });
+
+  user = new User({
+    handle: req.body.handle,
+    email: req.body.email,
+    password: req.body.password,
+  });
+
+  const salt = await bcrypt.genSalt(5);
+  user.password = await bcrypt.hash(user.password, salt);
+
+  await user.save();
+  const token = user.generatedAuthToken();
+
+  res
+    .header("x-auth-token", token)
+    .header("access-control-expose-header", "x-auth-token")
+    .send(_.pick(user, ["_id", "handle", "email"]));
+});
+
 module.exports = router;

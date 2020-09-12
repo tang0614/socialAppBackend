@@ -59,7 +59,7 @@ router.post("/", auth, async (req, res) => {
 });
 
 //comment a existing scream
-router.put("/:_id/:comment_id/comment", auth, async (req, res) => {
+router.put("/comment/:_id/:comment_id", auth, async (req, res) => {
   const comment = await Scream.findById(req.params.comment_id);
   if (!comment) {
     //must return otherwise the following code will be executes
@@ -78,7 +78,7 @@ router.put("/:_id/:comment_id/comment", auth, async (req, res) => {
 });
 
 //like a scream
-router.put("/:_id/like", auth, async (req, res) => {
+router.put("/like/:_id", auth, async (req, res) => {
   const updatedScream = await Scream.findByIdAndUpdate(req.params._id, {
     $set: { likeBy: [req.user._id] },
   });
@@ -91,7 +91,7 @@ router.put("/:_id/like", auth, async (req, res) => {
 });
 
 //unlike a scream
-router.put("/:_id/unlike", auth, async (req, res) => {
+router.put("/unlike/:_id", auth, async (req, res) => {
   const updatedScream = await Scream.findByIdAndUpdate(req.params._id, {
     $unset: { likeBy: [req.user._id] },
   });

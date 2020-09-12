@@ -1,16 +1,37 @@
-{"message":"connected to mongodb atlas","level":"info"}
-{"message":"connected to mongodb atlas","level":"info"}
-{"message":"connected to mongodb atlas","level":"info"}
-{"message":"connected to mongodb atlas","level":"info"}
-{"message":"connected to mongodb atlas","level":"info"}
-{"message":"connected to mongodb atlas","level":"info"}
-{"message":"connected to mongodb atlas","level":"info"}
-{"message":"connected to mongodb atlas","level":"info"}
-{"message":"connected to mongodb atlas","level":"info"}
-{"message":"connected to mongodb atlas","level":"info"}
-{"message":"connected to mongodb atlas","level":"info"}
-{"message":"connected to mongodb atlas","level":"info"}
-{"message":"connected to mongodb atlas","level":"info"}
 {"message":"start listening on port 3000","level":"info"}
 {"message":"connecting to mongodb+srv://xinyu_tang:CS2020er..@moviecluster.3sbef.mongodb.net/socialApp?retryWrites=true&w=majority..","level":"info"}
 {"message":"connecting successfully","level":"info"}
+{"message":"start listening on port 3000","level":"info"}
+{"message":"connecting to mongodb+srv://xinyu_tang:CS2020er..@moviecluster.3sbef.mongodb.net/socialApp?retryWrites=true&w=majority..","level":"info"}
+{"message":"connecting successfully","level":"info"}
+{"message":"start listening on port 3000","level":"info"}
+{"message":"connecting to mongodb+srv://xinyu_tang:CS2020er..@moviecluster.3sbef.mongodb.net/socialApp?retryWrites=true&w=majority..","level":"info"}
+{"message":"connecting successfully","level":"info"}
+{"message":"start listening on port 3000","level":"info"}
+{"message":"connecting to mongodb+srv://xinyu_tang:CS2020er..@moviecluster.3sbef.mongodb.net/socialApp?retryWrites=true&w=majority..","level":"info"}
+{"message":"connecting successfully","level":"info"}
+{"message":"start listening on port 3000","level":"info"}
+{"message":"connecting to mongodb+srv://xinyu_tang:CS2020er..@moviecluster.3sbef.mongodb.net/socialApp?retryWrites=true&w=majority..","level":"info"}
+{"message":"connecting successfully","level":"info"}
+{"message":"start listening on port 3000","level":"info"}
+{"message":"connecting to mongodb+srv://xinyu_tang:CS2020er..@moviecluster.3sbef.mongodb.net/socialApp?retryWrites=true&w=majority..","level":"info"}
+{"message":"connecting successfully","level":"info"}
+{"message":"start listening on port 3000","level":"info"}
+{"message":"connecting to mongodb+srv://xinyu_tang:CS2020er..@moviecluster.3sbef.mongodb.net/socialApp?retryWrites=true&w=majority..","level":"info"}
+{"message":"connecting successfully","level":"info"}
+{"message":"start listening on port 3000","level":"info"}
+{"message":"connecting to mongodb+srv://xinyu_tang:CS2020er..@moviecluster.3sbef.mongodb.net/socialApp?retryWrites=true&w=majority..","level":"info"}
+{"message":"connecting successfully","level":"info"}
+{"message":"start listening on port 5000","level":"info"}
+{"message":"connecting to mongodb+srv://xinyu_tang:CS2020er..@moviecluster.3sbef.mongodb.net/socialApp?retryWrites=true&w=majority..","level":"info"}
+{"message":"connecting successfully","level":"info"}
+{"message":"start listening on port 5000","level":"info"}
+{"message":"connecting to mongodb+srv://xinyu_tang:CS2020er..@moviecluster.3sbef.mongodb.net/socialApp?retryWrites=true&w=majority..","level":"info"}
+{"message":"connecting successfully","level":"info"}
+{"message":"start listening on port 5000","level":"info"}
+{"message":"connecting to mongodb+srv://xinyu_tang:CS2020er..@moviecluster.3sbef.mongodb.net/socialApp?retryWrites=true&w=majority..","level":"info"}
+{"message":"connecting successfully","level":"info"}
+{"message":"start listening on port 5000","level":"info"}
+{"message":"connecting to mongodb+srv://xinyu_tang:CS2020er..@moviecluster.3sbef.mongodb.net/socialApp?retryWrites=true&w=majority..","level":"info"}
+{"message":"connecting successfully","level":"info"}
+{"expose":true,"statusCode":400,"status":400,"body":"{\n   \n\"handle\":\"test\",\n\"email\":\"test@gmail.com\",\n\"password\":\"123456\",\n\"repeat_password:\"\"123456\"\n\n\n}","type":"entity.parse.failed","level":"error","message":"Unexpected string in JSON at position 88 Unexpected string in JSON at position 88","stack":"SyntaxError: Unexpected string in JSON at position 88\n    at JSON.parse (<anonymous>)\n    at parse (/Users/xinyutang/Dropbox/My Mac (MacBook-Pro.hsd1.ma.comcast.net)/Documents/Backend/demo/node_modules/body-parser/lib/types/json.js:89:19)\n    at /Users/xinyutang/Dropbox/My Mac (MacBook-Pro.hsd1.ma.comcast.net)/Documents/Backend/demo/node_modules/body-parser/lib/read.js:121:18\n    at invokeCallback (/Users/xinyutang/Dropbox/My Mac (MacBook-Pro.hsd1.ma.comcast.net)/Documents/Backend/demo/node_modules/raw-body/index.js:224:16)\n    at done (/Users/xinyutang/Dropbox/My Mac (MacBook-Pro.hsd1.ma.comcast.net)/Documents/Backend/demo/node_modules/raw-body/index.js:213:7)\n    at IncomingMessage.onEnd (/Users/xinyutang/Dropbox/My Mac (MacBook-Pro.hsd1.ma.comcast.net)/Documents/Backend/demo/node_modules/raw-body/index.js:273:7)\n    at IncomingMessage.emit (events.js:327:22)\n    at IncomingMessage.EventEmitter.emit (domain.js:482:12)\n    at endReadableNT (_stream_readable.js:1221:12)\n    at processTicksAndRejections (internal/process/task_queues.js:84:21)"}
