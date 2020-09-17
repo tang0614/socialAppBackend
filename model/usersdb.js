@@ -1,7 +1,8 @@
 const mongoose = require("mongoose");
 const jwt = require("jsonwebtoken");
 const config = require("config");
-
+const Scream = require("./screamsdb");
+const { ScreamSchema } = require("./screamsdb");
 //properties in this schema is optional, types only meaningful in mongoose not mongodb
 //Everything in Mongoose starts with a Schema. Each schema maps to a MongoDB collection and defines the shape of the documents within that collection.
 const UserSchema = new mongoose.Schema({
@@ -41,6 +42,8 @@ const UserSchema = new mongoose.Schema({
     minlength: 5,
     maxlength: 2225,
   },
+  like: [ScreamSchema],
+
   following: [
     {
       type: mongoose.Schema.Types.ObjectId,
@@ -62,7 +65,7 @@ UserSchema.methods.generatedAuthToken = function () {
   const token = jwt.sign(
     {
       _id: this._id,
-      name: this.name,
+      handle: this.handle,
       email: this.email,
       isAdmin: this.isAdmin,
     },

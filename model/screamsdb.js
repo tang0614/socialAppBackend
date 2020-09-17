@@ -3,12 +3,19 @@ const { GenreSchema } = require("./genresdb");
 
 //properties in this schema is optional, types only meaningful in mongoose not mongodb
 const ScreamSchema = new mongoose.Schema({
-  body: { type: String, required: true, minLength: 5, maxLength: 255 },
+  body: { type: String, required: true, minLength: 5, maxLength: 1000 },
 
-  author: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "User",
+  authorName: {
+    type: String,
     required: true,
+  },
+  createdAt: {
+    type: Date,
+    required: true,
+  },
+  commentOn: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Scream",
   },
   comments: [
     {
@@ -16,12 +23,7 @@ const ScreamSchema = new mongoose.Schema({
       ref: "Scream",
     },
   ],
-  likeBy: [
-    {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
-    },
-  ],
+
   genre: {
     type: GenreSchema,
   },

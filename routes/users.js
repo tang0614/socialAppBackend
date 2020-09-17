@@ -7,11 +7,13 @@ const bcrypt = require("bcrypt");
 const auth = require("../middleware/auth");
 //image
 const multer = require("multer");
+const mongoose = require("mongoose");
+const Scream = require("../model/screamsdb");
 
 // '/upload becomes absolute path
 
 const schema = Joi.object({
-  handle: Joi.string().alphanum().min(5).max(30).required(),
+  handle: Joi.string().alphanum().min(5).max(30),
 
   password: Joi.string().pattern(new RegExp("^[a-zA-Z0-9]{3,30}$")),
 
@@ -21,6 +23,9 @@ const schema = Joi.object({
     minDomainSegments: 2,
     tlds: { allow: ["com", "net"] },
   }),
+  website: Joi.string().alphanum().min(5).max(30),
+  location: Joi.string().alphanum().min(5).max(30),
+  bio: Joi.string().alphanum().min(5).max(100),
 });
 
 const storage = multer.diskStorage({
@@ -49,30 +54,38 @@ const upload = multer({
 
 //get other users detail
 router.get("/:handle", async (req, res) => {
-  const user = await User.find({ handle: req.params.handle }).select(
+  const user = await User.findOne({ handle: req.params.handle }).select(
     "-password"
   );
-  res.send(user);
-});
-
-//get personal detail
-router.get("/me", auth, async (req, res) => {
-  const user = await User.findById(req.user._id).select("-password");
+  if (!user) return res.status(404).send({ message: "user does not exist" });
   res.send(user);
 });
 
 //add user details
 router.put("/details", auth, async (req, res) => {
-  const user = await User.findByIdAndUpdate(req.params._id, {
-    $set: {
-      website: req.body.website,
-      location: req.body.location,
-      bio: req.body.bio,
+  //The default is to return the original, unaltered document.
+  //If you want the new, updated document to be returned you have to pass an additional argument:{returnOriginal:false}
+  const { error } = schema.validate(req.body);
+  if (error) {
+    return res.status(404).send({ message: error.details[0].message });
+  }
+
+  const user = await User.findByIdAndUpdate(
+    req.user._id,
+    {
+      $set: {
+        website: req.body.website,
+        location: req.body.location,
+        bio: req.body.bio,
+      },
     },
-  });
+    { new: true }
+  );
 
   if (!user)
-    return res.status(404).send("The user with the given ID was not provides");
+    return res
+      .status(404)
+      .send({ message: "The user with the given ID was not provides" });
 
   // return scream
   res.send(user);
@@ -80,11 +93,15 @@ router.put("/details", auth, async (req, res) => {
 
 //add user image
 router.put("/image", auth, upload.single("profileImage"), async (req, res) => {
-  const user = await User.findByIdAndUpdate(req.user._id, {
-    $set: {
-      imageUrl: req.file.path,
+  const user = await User.findByIdAndUpdate(
+    req.user._id,
+    {
+      $set: {
+        imageUrl: req.file.path,
+      },
     },
-  });
+    { new: true }
+  );
 
   if (!user)
     return res.status(404).send("The user with the given ID was not provides");
@@ -94,33 +111,131 @@ router.put("/image", auth, upload.single("profileImage"), async (req, res) => {
 });
 
 //add friend
-router.put("/:handle", auth, async (req, res) => {
-  //check if the documents exists, using find will return back an array of objects
-  const target = await User.findOne({ handle: req.params.handle });
+router.put("/follow/:_targetId", auth, async (req, res) => {
+  if (req.params._targetId === req.user._id)
+    return res.status(404).send({ message: "cannot follow yourself" });
+
+  const target = await User.update(
+    { _id: req.params._targetId },
+    {
+      $push: {
+        followedBy: {
+          _id: req.user._id,
+        },
+      },
+    },
+    { new: true }
+  );
 
   if (!target) {
     //must return otherwise the following code will be executes
-    return res.status(404).send("the user of the given id is not found");
+    return res
+      .status(404)
+      .send({ message: "the user of the given id is not found" });
   }
 
-  const user = await User.findByIdAndUpdate(req.user._id, {
-    $set: {
-      following: [target._id],
+  const user = await User.update(
+    { _id: req.user._id },
+    {
+      $push: {
+        following: {
+          _id: req.params._targetId,
+        },
+      },
     },
-  });
+    { new: true }
+  );
 
   if (!user)
-    return res.status(404).send("The user with the given ID was not provides");
+    return res
+      .status(404)
+      .send({ message: "The user with the given ID was not provides" });
 
   // return scream
-  res.send(user);
+  res.send({ message: "successfully followed" });
+});
+
+//unfollow a friend
+router.put("/unfollow/:_targetId", auth, async (req, res) => {
+  //check if the documents exists, using find will return back an array of objects
+  if (req.params._targetId === req.user._id)
+    return res.status(404).send({ message: "cannot unfollow yourself" });
+
+  const target = await User.findById(req.params._targetId);
+  target.followedBy.pull(req.user._id);
+  target.save();
+
+  if (!target) {
+    //must return otherwise the following code will be executes
+    return res
+      .status(404)
+      .send({ message: "the user of the given id is not found" });
+  }
+
+  const user = await User.findById(req.user._id);
+  user.following.pull(req.params._targetId);
+  user.save();
+
+  if (!user)
+    return res
+      .status(404)
+      .send({ message: "The user with the given ID was not provides" });
+
+  // return scream
+  res.send({ message: "successfully unfollowed" });
+});
+//like screams
+router.put("/like/:_id", auth, async (req, res) => {
+  const scream = await Scream.findById(req.params._id);
+
+  if (!scream)
+    return res.status(404).send("The scream with the given ID was not valid");
+
+  const updated = await User.findByIdAndUpdate(
+    { _id: req.user._id },
+    {
+      $push: {
+        like: {
+          _id: scream._id,
+          authorName: scream.authorName,
+          createdAt: scream.createdAt,
+          body: scream.body,
+        },
+      },
+    },
+    { new: true }
+  );
+
+  if (!updated)
+    return res.status(404).send("The User with the given ID was not provides");
+
+  // return updated Section
+  res.send(updated);
+});
+
+//like screams
+router.put("/unlike/:_id", auth, async (req, res) => {
+  const scream = await Scream.findById(req.params._id);
+
+  if (!scream)
+    return res.status(404).send("The scream with the given ID was not valid");
+
+  const target = await User.findById(req.user._id);
+  target.like.pull({ _id: req.params._id });
+  target.save();
+
+  if (!target)
+    return res.status(404).send("The User with the given ID was not provides");
+
+  // return updated Section
+  res.send(target);
 });
 
 //authorization
 router.post("/", async (req, res) => {
   const { error } = schema.validate(req.body);
   if (error) {
-    return res.status(404).send(error.details[0].message);
+    return res.status(404).send({ message: error.details[0].message });
   }
   //if the user already registered
   let user = await User.findOne({ handle: req.body.handle });
@@ -139,7 +254,7 @@ router.post("/", async (req, res) => {
     password: req.body.password,
   });
 
-  const salt = await bcrypt.genSalt(5);
+  const salt = await bcrypt.genSalt(10);
   user.password = await bcrypt.hash(user.password, salt);
 
   await user.save();
@@ -148,7 +263,7 @@ router.post("/", async (req, res) => {
   res
     .header("x-auth-token", token)
     .header("access-control-expose-header", "x-auth-token")
-    .send(_.pick(user, ["_id", "handle", "email"]));
+    .send({ user: _.pick(user, ["_id", "handle", "email"]) });
 });
 
 module.exports = router;

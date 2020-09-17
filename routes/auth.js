@@ -27,10 +27,10 @@ router.post("/", async function (req, res) {
     return res.status(400).send({ message: "Invalid email or password" });
 
   //validate password, comparing salted and unsalted password
-  // const validPassword = await bcrypt.compare(req.body.password, user.password);
+  const validPassword = await bcrypt.compare(req.body.password, user.password);
 
-  // if (!validPassword)
-  //   return res.status(400).send({ message: "Invalid email or password" });
+  if (!validPassword)
+    return res.status(400).send({ message: "Invalid email or password" });
 
   //_id is the information of the user , here is mongodb id, and so we do not need to query the data anymore
   //privateKey is the digital signature that only  on the the server
