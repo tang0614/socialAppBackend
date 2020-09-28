@@ -2,7 +2,7 @@ const express = require("express");
 const router = express("Router");
 const Joi = require("joi");
 const Scream = require("../model/screamsdb");
-const Genre = require("../model/genresdb");
+// const Genre = require("../model/genresdb");
 const mongoose = require("mongoose");
 const auth = require("../middleware/auth");
 const admin = require("../middleware/admin");
@@ -14,14 +14,26 @@ const schema = Joi.object({
 
 //get all screams
 router.get("/", async (req, res) => {
-  const screams = await Scream.find().select("-_id");
+  // const screams = await Scream.find().sort({ createdAt: -1 });
+
+  const screams = await Scream.aggregate([
+    {
+      $lookup: {
+        from: "users", //collection name not model variable name
+        localField: "author",
+        foreignField: "_id",
+        as: "author_details",
+      },
+    },
+    { $sort: { createdAt: -1 } },
+  ]);
 
   if (!screams) {
     //must return otherwise the following code will be executes
     return res.status(404).send({ message: "no screams posted" });
   }
 
-  res.send(screams);
+  res.send({ screams });
 });
 
 //get one scream
@@ -48,6 +60,22 @@ router.get("/:_id", async (req, res) => {
         as: "comments_details",
       },
     },
+    {
+      $lookup: {
+        from: "screams", //collection name not model variable name
+        localField: "retweetOn",
+        foreignField: "_id",
+        as: "retweetOn_details",
+      },
+    },
+    {
+      $lookup: {
+        from: "screams", //collection name not model variable name
+        localField: "retweets",
+        foreignField: "_id",
+        as: "retweets_details",
+      },
+    },
   ]);
 
   //check if the documents exists
@@ -60,7 +88,7 @@ router.get("/:_id", async (req, res) => {
       .send({ message: "the scream of the given id is not found" });
   }
 
-  res.send(scream);
+  res.send({ scream });
 });
 
 //get all comments from a scream
@@ -72,11 +100,13 @@ router.post("/", auth, async (req, res) => {
   // if not valid, return 400
   const validateResult = schema.validate(req.body);
   if (validateResult.error) {
-    res.status(404).send(validateResult.error.details[0].message);
+    return res
+      .status(404)
+      .send({ message: validateResult.error.details[0].message });
   }
 
   const scream = new Scream({
-    authorName: req.user.handle,
+    author: req.user._id,
     createdAt: new Date().toISOString(),
     body: req.body.body,
   });
@@ -84,15 +114,18 @@ router.post("/", auth, async (req, res) => {
   await scream.save();
 
   // return scream
-  res.send(scream);
+  res.send({ scream });
 });
 
 //comment a existing scream
-router.put("/comment/:_id/:comment_id", auth, async (req, res) => {
+router.put("/comment", auth, async (req, res) => {
+  const comment_id = req.body.comment_id;
+  const commented_id = req.body.commented_id;
+
   const comment = await Scream.findByIdAndUpdate(
-    req.params.comment_id,
+    comment_id,
     {
-      $set: { commentOn: req.params._id },
+      $set: { commentOn: commented_id },
     },
     { new: true }
   );
@@ -105,15 +138,13 @@ router.put("/comment/:_id/:comment_id", auth, async (req, res) => {
   }
 
   const updatedScream = await Scream.findByIdAndUpdate(
-    req.params._id,
+    commented_id,
     {
       $push: {
         comments: {
-          _id: req.params.comment_id,
+          _id: comment_id,
         },
       },
-
-      // $set: { comments: [req.params.comment_id] },
     },
     { new: true }
   );
@@ -121,106 +152,131 @@ router.put("/comment/:_id/:comment_id", auth, async (req, res) => {
   if (!updatedScream)
     return res
       .status(404)
-      .send({ message: "The genre with the given ID was not provides" });
+      .send({ message: "The comment with the given ID was not provides" });
 
   // return updated comment
-  res.send(comment);
+  res.send({ comment });
 });
 
-//like a scream
-// router.put("/like/:_id", auth, async (req, res) => {
-//   const updatedScream = await Scream.findByIdAndUpdate(
-//     req.params._id,
-//     {
-//       $push: {
-//         likeBy: {
-//           _id: req.user._id,
-//         },
-//       },
-//     },
-//     { new: true }
-//   );
+router.put("/uncomment", auth, async (req, res) => {
+  const scream = await Scream.findById(req.body.comment_id);
+  const target = await Scream.findById(req.body.commented_id);
+  if (!target)
+    return res
+      .status(404)
+      .send("The commented with the given ID was not valid");
 
-//   if (!updatedScream)
-//     return res
-//       .status(404)
-//       .send({ message: "The genre with the given ID was not provides" });
+  if (!scream)
+    return res.status(404).send("The comment with the given ID was not valid");
 
-//   // return scream
-//   res.send(updatedScream);
-// });
+  target.comments.pull({ _id: req.body.comment_id });
+  target.save();
 
-//unlike a scream
-// router.put("/unlike/:_id", auth, async (req, res) => {
-//   const updatedScream = await Scream.update(
-//     { _id: req.params._id },
-//     {
-//       $pull: {
-//         likeBy: {
-//           _id: req.user._id,
-//         },
-//       },
-//       function(err, data) {
-//         if (err) {
-//           return res.status(500).json({ error: "error in deleting users" });
-//         }
-//       },
-//     },
+  if (!target)
+    return res
+      .status(404)
+      .send("The scream with the given ID was not provides");
 
-//     { new: true }
-//   );
+  // return updated Section
+  res.send({ target });
+});
 
-//   if (!updatedScream)
-//     return res
-//       .status(404)
-//       .send({ message: "The genre with the given ID was not provides" });
+//retweet a existing scream
+router.put("/retweet", auth, async (req, res) => {
+  const retweet_id = req.body.retweet_id;
+  const retweeted_id = req.body.retweeted_id;
 
-//   // return scream
-//   res.send(updatedScream);
-// });
-
-//update a scream genre
-router.put("/genre/:_id", auth, async (req, res) => {
-  const genre = await Genre.findById(req.body.genreId);
-
-  if (req.body.genreId && !genre)
-    return res.status(404).send("The genre with the given ID was not valid");
-
-  const updated = await Scream.findByIdAndUpdate(
-    req.params._id,
+  const retweet = await Scream.findByIdAndUpdate(
+    retweet_id,
     {
-      $set: {
-        genre: {
-          _id: genre._id,
-          name: genre.name,
+      $set: { retweetOn: retweeted_id },
+    },
+    { new: true }
+  );
+
+  if (!retweet) {
+    //must return otherwise the following code will be executes
+    return res
+      .status(404)
+      .send({ message: "the retweet of the given id is not found" });
+  }
+
+  const updatedScream = await Scream.findByIdAndUpdate(
+    retweeted_id,
+    {
+      $push: {
+        retweets: {
+          _id: retweet_id,
         },
       },
     },
     { new: true }
   );
 
-  if (!updated)
+  if (!updatedScream)
     return res
       .status(404)
-      .send("The scream with the given ID was not provides");
+      .send({ message: "The retweet with the given ID was not provides" });
 
-  // return updated scream
-  res.send(updated);
+  // return updated comment
+  res.send({ retweet });
 });
 
+//update a scream genre
+// router.put("/genre/:_id", auth, async (req, res) => {
+//   const genre = await Genre.findById(req.body.genreId);
+
+//   if (req.body.genreId && !genre)
+//     return res
+//       .status(404)
+//       .send({ message: "The genre with the given ID was not valid" });
+
+//   const updated = await Scream.findByIdAndUpdate(
+//     req.params._id,
+//     {
+//       $set: {
+//         genre: {
+//           _id: genre._id,
+//           name: genre.name,
+//         },
+//       },
+//     },
+//     { new: true }
+//   );
+
+//   if (!updated)
+//     return res
+//       .status(404)
+//       .send({ message: "The scream with the given ID was not provides" });
+
+//   // return updated scream
+//   res.send({ updated });
+// });
+
 //delete a scream
-router.delete("/:_id", [auth], async (req, res) => {
-  try {
-    const scream = await Scream.findByIdAndRemove(req.params._id);
-    if (!scream) {
-      //must return otherwise the following code will be executes
-      return res.status(404).send("the scream of the given id is not found");
-    } else {
-      return res.send(scream);
+router.put("/delete", [auth], async (req, res) => {
+  const comment_ids = req.body.ids;
+  console.log("req.body is", req.body);
+  let new_ids = [];
+
+  comment_ids.forEach((id) => {
+    new_ids.push(new mongoose.Types.ObjectId(id));
+  });
+
+  Scream.deleteMany(
+    {
+      _id: {
+        $in: new_ids,
+      },
+    },
+    function (err, result) {
+      if (err) {
+        res.send({ message: err });
+      } else {
+        res.send(result);
+      }
     }
-  } catch (err) {
-    return res.status(404).send({ message: err });
-  }
+  );
 });
 
 module.exports = router;

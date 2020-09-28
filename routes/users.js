@@ -23,9 +23,9 @@ const schema = Joi.object({
     minDomainSegments: 2,
     tlds: { allow: ["com", "net"] },
   }),
-  website: Joi.string().alphanum().min(5).max(30),
-  location: Joi.string().alphanum().min(5).max(30),
-  bio: Joi.string().alphanum().min(5).max(100),
+  website: Joi.string().min(5).max(50),
+  location: Joi.string().min(5).max(30),
+  bio: Joi.string().min(5).max(200),
 });
 
 const storage = multer.diskStorage({
@@ -53,12 +53,33 @@ const upload = multer({
 });
 
 //get other users detail
-router.get("/:handle", async (req, res) => {
-  const user = await User.findOne({ handle: req.params.handle }).select(
-    "-password"
-  );
+router.get("/:_id", auth, async (req, res) => {
+  const user = await User.aggregate([
+    {
+      $match: {
+        _id: new mongoose.Types.ObjectId(req.params._id),
+      },
+    },
+    {
+      $lookup: {
+        from: "users", //collection name not model variable name
+        localField: "following",
+        foreignField: "_id",
+        as: "following_details",
+      },
+    },
+    {
+      $lookup: {
+        from: "users", //collection name not model variable name
+        localField: "followedBy",
+        foreignField: "_id",
+        as: "followedBy_details",
+      },
+    },
+  ]);
+
   if (!user) return res.status(404).send({ message: "user does not exist" });
-  res.send(user);
+  res.send({ user: user[0] });
 });
 
 //add user details
@@ -70,25 +91,41 @@ router.put("/details", auth, async (req, res) => {
     return res.status(404).send({ message: error.details[0].message });
   }
 
+  const user_1 = await User.findById(req.user._id);
+  if (!user_1)
+    return res
+      .status(404)
+      .send({ message: "The user with the given ID was not provides" });
+
+  let website = user_1.website;
+  let bio = user_1.bio;
+  let location = user_1.location;
+
+  if (req.body.website) {
+    website = req.body.website;
+  }
+  if (req.body.bio) {
+    bio = req.body.bio;
+  }
+  if (req.body.location) {
+    location = req.body.location;
+  }
+
+  //user
   const user = await User.findByIdAndUpdate(
     req.user._id,
     {
       $set: {
-        website: req.body.website,
-        location: req.body.location,
-        bio: req.body.bio,
+        website,
+        location,
+        bio,
       },
     },
     { new: true }
   );
 
-  if (!user)
-    return res
-      .status(404)
-      .send({ message: "The user with the given ID was not provides" });
-
   // return scream
-  res.send(user);
+  res.send({ user });
 });
 
 //add user image
@@ -107,7 +144,7 @@ router.put("/image", auth, upload.single("profileImage"), async (req, res) => {
     return res.status(404).send("The user with the given ID was not provides");
 
   // return scream
-  res.send(user);
+  res.send({ user });
 });
 
 //add friend
@@ -210,10 +247,10 @@ router.put("/like/:_id", auth, async (req, res) => {
     return res.status(404).send("The User with the given ID was not provides");
 
   // return updated Section
-  res.send(updated);
+  res.send({ updated });
 });
 
-//like screams
+//unlike screams
 router.put("/unlike/:_id", auth, async (req, res) => {
   const scream = await Scream.findById(req.params._id);
 
@@ -228,7 +265,7 @@ router.put("/unlike/:_id", auth, async (req, res) => {
     return res.status(404).send("The User with the given ID was not provides");
 
   // return updated Section
-  res.send(target);
+  res.send({ target });
 });
 
 //authorization
@@ -239,11 +276,12 @@ router.post("/", async (req, res) => {
   }
   //if the user already registered
   let user = await User.findOne({ handle: req.body.handle });
-  if (user) return res.status(400).send({ message: "user already registered" });
+  if (user)
+    return res.status(400).send({ message: "userName already registered" });
 
   let user2 = await User.findOne({ email: req.body.email });
   if (user2)
-    return res.status(400).send({ message: "user already registered" });
+    return res.status(400).send({ message: "email already registered" });
 
   if (req.body.password !== req.body.repeat_password)
     return res.status(400).send({ message: "password is different" });
@@ -252,6 +290,7 @@ router.post("/", async (req, res) => {
     handle: req.body.handle,
     email: req.body.email,
     password: req.body.password,
+    createdAt: new Date().toISOString(),
   });
 
   const salt = await bcrypt.genSalt(10);
@@ -263,7 +302,7 @@ router.post("/", async (req, res) => {
   res
     .header("x-auth-token", token)
     .header("access-control-expose-header", "x-auth-token")
-    .send({ user: _.pick(user, ["_id", "handle", "email"]) });
+    .send({ user: _.pick(user, ["_id", "handle", "email"]), token: token });
 });
 
 module.exports = router;

@@ -18,7 +18,7 @@ const schema = Joi.object({
 router.post("/", async function (req, res) {
   const { error } = schema.validate(req.body);
   if (error) {
-    return res.status(404).send(error.details[0].message);
+    return res.status(404).send({ message: error.details[0].message });
   }
 
   let user = await User.findOne({ email: req.body.email });
@@ -37,6 +37,6 @@ router.post("/", async function (req, res) {
   const token = user.generatedAuthToken();
   return res
     .header("x-auth-token", token)
-    .send(_.pick(user, ["_id", "handle", "email"]));
+    .send({ user: _.pick(user, ["_id", "handle", "email"]), token: token });
 });
 module.exports = router;

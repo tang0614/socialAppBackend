@@ -43,6 +43,9 @@ const UserSchema = new mongoose.Schema({
     maxlength: 2225,
   },
   like: [ScreamSchema],
+  createdAt: {
+    type: Date,
+  },
 
   following: [
     {
