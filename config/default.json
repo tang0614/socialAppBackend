@@ -1,7 +1,6 @@
 {
-  "name": " social",
-  "jwtPrivateKey": "social_jwtPrivateKey",
-  "port": "3000",
+  "jwtPrivateKey": "1234",
+  "port": "5000",
   "requiresAuth": true,
   "db": "mongodb+srv://xinyu_tang:CS2020er..@moviecluster.3sbef.mongodb.net/socialApp?retryWrites=true&w=majority"
 }

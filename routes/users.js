@@ -5,10 +5,44 @@ const User = require("../model/usersdb");
 const _ = require("lodash");
 const bcrypt = require("bcrypt");
 const auth = require("../middleware/auth");
+const config = require("config");
 //image
 const multer = require("multer");
+const multerS3 = require("multer-s3");
 const mongoose = require("mongoose");
 const Scream = require("../model/screamsdb");
+const aws = require("aws-sdk");
+
+const s3 = new aws.S3({
+  accessKeyId: config.get("accessKeyId"),
+  secretAccessKey: config.get("secretAccessKey"),
+  Bucket: "xinyu-twitter-app",
+});
+
+const storage = multerS3({
+  s3: s3,
+  bucket: "xinyu-twitter-app",
+  acl: "public-read",
+  key: function (req, file, cb) {
+    cb(null, Date.now().toString() + file.originalname);
+  },
+});
+
+const fileFilter = (req, file, cb) => {
+  if (file.mimetype === "image/jpeg" || file.mimetype === "image/png") {
+    cb(null, true);
+  } else {
+    cb(new Error({ message: "image type should be png/jpeg" }), false);
+  }
+};
+
+const upload = multer({
+  storage: storage,
+  limits: {
+    fileSize: 1024 * 1024 * 5,
+  },
+  fileFilter: fileFilter,
+});
 
 // '/upload becomes absolute path
 
@@ -28,29 +62,22 @@ const schema = Joi.object({
   bio: Joi.string().min(5).max(200),
 });
 
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, "./uploads/");
-  },
-  filename: function (req, file, cb) {
-    cb(null, new Date().toISOString() + file.originalname);
-  },
-});
+// const storage = multer.diskStorage({
+//   destination: function (req, file, cb) {
+//     cb(null, "./uploads/");
+//   },
+//   filename: function (req, file, cb) {
+//     cb(null, new Date().toISOString() + file.originalname);
+//   },
+// });
 
-const fileFilter = (req, file, cb) => {
-  if (file.mimetype === "image/jpeg" || file.mimetype === "image/png") {
-    cb(null, true);
-  } else {
-    cb(new Error({ message: "image type should be png/jpeg" }), false);
-  }
-};
-const upload = multer({
-  storage: storage,
-  limits: {
-    fileSize: 1024 * 1024 * 5,
-  },
-  fileFilter: fileFilter,
-});
+// const upload = multer({
+//   storage: storage,
+//   limits: {
+//     fileSize: 1024 * 1024 * 5,
+//   },
+//   fileFilter: fileFilter,
+// });
 
 //get other users detail
 router.get("/:_id", auth, async (req, res) => {
