@@ -24,7 +24,7 @@ const storage = multerS3({
   bucket: "xinyu-twitter-app",
   acl: "public-read",
   key: function (req, file, cb) {
-    cb(null, Date.now().toString() + file.originalname);
+    cb(null, req.user._id + file.originalname);
   },
 });
 
@@ -62,22 +62,28 @@ const schema = Joi.object({
   bio: Joi.string().min(5).max(200),
 });
 
-// const storage = multer.diskStorage({
-//   destination: function (req, file, cb) {
-//     cb(null, "./uploads/");
-//   },
-//   filename: function (req, file, cb) {
-//     cb(null, new Date().toISOString() + file.originalname);
-//   },
-// });
 
-// const upload = multer({
-//   storage: storage,
-//   limits: {
-//     fileSize: 1024 * 1024 * 5,
-//   },
-//   fileFilter: fileFilter,
-// });
+
+//get personal detail
+router.get("/", async (req, res) => {
+
+  const users = await User.find()
+  if (!users) {
+    //must return otherwise the following code will be executes
+    return res.status(404).send({ message: "no users" });
+  }
+
+  res.send({ users});
+});
+
+
+//get personal detail
+router.delete("/:_id", auth, async (req, res) => {
+  const user = await User.remove({ _id: req.params._id})
+
+  res.send(user);
+});
+
 
 //get other users detail
 router.get("/:_id", auth, async (req, res) => {
@@ -161,7 +167,7 @@ router.put("/image", auth, upload.single("profileImage"), async (req, res) => {
     req.user._id,
     {
       $set: {
-        imageUrl: req.file.path,
+        imageUrl: req.user._id + req.file.originalname,
       },
     },
     { new: true }
